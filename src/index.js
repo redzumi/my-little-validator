@@ -55,26 +55,28 @@ class MyLittleValidator {
   static AVAILABLE_VALIDATORS = [
     {
       name: 'string',
-      validate: (data) => {
-        return (typeof data === 'string');
-      }
+      validate: (data) => (typeof data === 'string')
     },
     {
       name: 'min',
-      validate: (data, value) => {
-        return data.length > value;
-      }
+      validate: (data, value) => data.length > value
     },
     {
       name: 'max',
-      validate: (data, value) => {
-        return data.length < value;
-      }
+      validate: (data, value) => data.length < value
     }
   ];
 
-  constructor(locale) {
-    this.locale = { ...MyLittleValidator.DEFAULT_LOCALE, ...locale };
+  constructor() {
+    this.locale = MyLittleValidator.DEFAULT_LOCALE;
+  }
+
+  registerValidator(name, validate) {
+    MyLittleValidator.AVAILABLE_VALIDATORS.push({ name, validate });
+  }
+
+  updateLocale(locale) {
+    this.locale = { ...this.locale, ...locale };
   }
 
   validate(schema, data) {

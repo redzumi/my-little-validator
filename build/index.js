@@ -90,13 +90,23 @@ var Schema = function () {
 }();
 
 var MyLittleValidator = function () {
-  function MyLittleValidator(locale) {
+  function MyLittleValidator() {
     (0, _classCallCheck3.default)(this, MyLittleValidator);
 
-    this.locale = (0, _extends3.default)({}, MyLittleValidator.DEFAULT_LOCALE, locale);
+    this.locale = MyLittleValidator.DEFAULT_LOCALE;
   }
 
   (0, _createClass3.default)(MyLittleValidator, [{
+    key: 'registerValidator',
+    value: function registerValidator(name, validate) {
+      MyLittleValidator.AVAILABLE_VALIDATORS.push({ name: name, validate: validate });
+    }
+  }, {
+    key: 'updateLocale',
+    value: function updateLocale(locale) {
+      this.locale = (0, _extends3.default)({}, this.locale, locale);
+    }
+  }, {
     key: 'validate',
     value: function validate(schema, data) {
       var errors = schema.validate(data);
