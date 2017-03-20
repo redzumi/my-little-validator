@@ -28,11 +28,10 @@ var Field = function () {
 
     (0, _classCallCheck3.default)(this, Field);
 
-    this.fieldValidators = [];
-    MyLittleValidator.AVAILABLE_VALIDATORS.forEach(function (validator) {
-      _this[validator.name] = function (value) {
-        _this.fieldValidators.push({ validator: validator, value: value });
-        return _this;
+    this.values = {};
+    (0, _keys2.default)(MyLittleValidator.AVAILABLE_VALIDATORS).forEach(function (key) {
+      _this[key] = function (value) {
+        _this.values[key] = value;return _this;
       };
     });
   }
@@ -52,10 +51,14 @@ var Field = function () {
   }, {
     key: 'validate',
     value: function validate(data) {
-      //validating, will return validator with error
-      return this.fieldValidators.find(function (fieldValidator) {
-        return !fieldValidator.validator.validate(data, fieldValidator.value);
+      var _this2 = this;
+
+      var fieldError = null;
+      (0, _keys2.default)(this.values).forEach(function (key) {
+        if (fieldError) return;
+        if (!MyLittleValidator.AVAILABLE_VALIDATORS[key](data, _this2.values[key])) fieldError = { type: key, value: _this2.values[key] };
       });
+      return fieldError;
     }
   }]);
   return Field;
@@ -71,17 +74,14 @@ var Schema = function () {
   (0, _createClass3.default)(Schema, [{
     key: 'validate',
     value: function validate(data) {
-      var _this2 = this;
+      var _this3 = this;
 
       var schemaErrors = [];
-      (0, _keys2.default)(this.fields).map(function (key) {
-        var validateError = _this2.fields[key].validate(data[key]);
-        if (validateError) schemaErrors.push({
-          type: validateError.validator.name,
-          value: validateError.value,
-          field: key,
-          name: _this2.fields[key].name
-        });
+      (0, _keys2.default)(this.fields).forEach(function (key) {
+        var fieldError = _this3.fields[key].validate(data[key]);
+        if (fieldError) {
+          schemaErrors.push((0, _extends3.default)({}, fieldError, { field: key, name: _this3.fields[key].name }));
+        }
       });
       return schemaErrors;
     }
@@ -98,8 +98,8 @@ var MyLittleValidator = function () {
 
   (0, _createClass3.default)(MyLittleValidator, [{
     key: 'registerValidator',
-    value: function registerValidator(name, validate) {
-      MyLittleValidator.AVAILABLE_VALIDATORS.push({ name: name, validate: validate });
+    value: function registerValidator(name, predicate) {
+      MyLittleValidator.AVAILABLE_VALIDATORS[name] = predicate;
     }
   }, {
     key: 'updateLocale',
@@ -137,20 +137,15 @@ MyLittleValidator.DEFAULT_LOCALE = {
   min: '%%field%% length must be longer than %%value%% characters.',
   max: '%%field%% length must be less than %%value%% characters.'
 };
-MyLittleValidator.AVAILABLE_VALIDATORS = [{
-  name: 'string',
-  validate: function validate(data) {
+MyLittleValidator.AVAILABLE_VALIDATORS = {
+  string: function string(data) {
     return typeof data === 'string';
-  }
-}, {
-  name: 'min',
-  validate: function validate(data, value) {
+  },
+  min: function min(data, value) {
     return data.length > value;
-  }
-}, {
-  name: 'max',
-  validate: function validate(data, value) {
+  },
+  max: function max(data, value) {
     return data.length < value;
   }
-}];
+};
 exports.default = MyLittleValidator;

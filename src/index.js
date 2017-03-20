@@ -1,12 +1,12 @@
 class Field {
   constructor() {
-    this.fieldValidators = [];
-    MyLittleValidator.AVAILABLE_VALIDATORS.forEach((validator) => {
-      this[validator.name] = (value) => {
-        this.fieldValidators.push({ validator, value });
-        return this;
-      };
-    });
+    this.values = {};
+    Object.keys(MyLittleValidator.AVAILABLE_VALIDATORS)
+      .forEach((key) => {
+        this[key] = (value) => {
+          this.values[key] = value; return this;
+        }
+      });
   }
 
   //custom name
@@ -17,10 +17,13 @@ class Field {
 
   //return field error
   validate(data) {
-    //validating, will return validator with error
-    return this.fieldValidators.find((fieldValidator) => {
-      return !fieldValidator.validator.validate(data, fieldValidator.value);
+    let fieldError = null;
+    Object.keys(this.values).forEach((key) => {
+      if(fieldError) return;
+      if(!MyLittleValidator.AVAILABLE_VALIDATORS[key](data, this.values[key]))
+        fieldError = { type: key, value: this.values[key] };
     });
+    return fieldError;
   }
 }
 
@@ -31,14 +34,14 @@ class Schema {
 
   validate(data) {
     const schemaErrors = [];
-    Object.keys(this.fields).map((key) => {
-      const validateError = this.fields[key].validate(data[key]);
-      if(validateError) schemaErrors.push({
-        type: validateError.validator.name,
-        value: validateError.value,
-        field: key,
-        name: this.fields[key].name
-      });
+    Object.keys(this.fields).forEach((key) => {
+      const fieldError = this.fields[key].validate(data[key]);
+      if(fieldError) {
+        schemaErrors.push({
+          ...fieldError,
+          ...{ field: key, name: this.fields[key].name }
+        });
+      }
     });
     return schemaErrors;
   }
@@ -52,27 +55,18 @@ class MyLittleValidator {
     max:      '%%field%% length must be less than %%value%% characters.'
   };
 
-  static AVAILABLE_VALIDATORS = [
-    {
-      name: 'string',
-      validate: (data) => (typeof data === 'string')
-    },
-    {
-      name: 'min',
-      validate: (data, value) => data.length > value
-    },
-    {
-      name: 'max',
-      validate: (data, value) => data.length < value
-    }
-  ];
+  static AVAILABLE_VALIDATORS = {
+    string: (data) => (typeof data === 'string'),
+    min:    (data, value) => data.length > value,
+    max:    (data, value) => data.length < value
+  };
 
   constructor() {
     this.locale = MyLittleValidator.DEFAULT_LOCALE;
   }
 
-  registerValidator(name, validate) {
-    MyLittleValidator.AVAILABLE_VALIDATORS.push({ name, validate });
+  registerValidator(name,  predicate) {
+    MyLittleValidator.AVAILABLE_VALIDATORS[name] = predicate;
   }
 
   updateLocale(locale) {
